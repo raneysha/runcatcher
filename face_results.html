@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Face Recognition Results</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f0;
+    --white: #ffffff;
+    --border: #e8e8e3;
+    --text: #1a1a1a;
+    --muted: #8a8a85;
+    --accent: #1a1a1a;
+    --tag-bg: #f0f0eb;
+    --match-bg: #f0faf4;
+    --match-color: #1a7a45;
+    --weak-bg: #fff8f0;
+    --weak-color: #b35a00;
+    --bar-bg: #e8e8e3;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  nav {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    height: 56px;
+    gap: 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .nav-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+  .nav-links a {
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .nav-links a.active { color: var(--text); }
+  .nav-right { margin-left: auto; }
+  .nav-btn {
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--text);
+    color: #fff;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .nav-btn:hover { opacity: 0.75; }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem 5rem; }
+
+  .breadcrumb {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .breadcrumb span { color: var(--text); }
+
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .page-header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: 1.2;
+  }
+  .page-header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .result-count { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+  .summary-strip {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    margin-bottom: 2rem;
+    overflow: hidden;
+  }
+  .summary-item {
+    flex: 1;
+    padding: 1.25rem 1.5rem;
+    border-right: 1px solid var(--border);
+  }
+  .summary-item:last-child { border-right: none; }
+  .summary-val { font-size: 1.6rem; font-weight: 600; line-height: 1; margin-bottom: 4px; }
+  .summary-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+    animation: fadeUp 0.35s ease both;
+    cursor: pointer;
+  }
+  .card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.10s; }
+  .card:nth-child(3) { animation-delay: 0.15s; }
+  .card:nth-child(4) { animation-delay: 0.20s; }
+
+  .card-img {
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--tag-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .img-fallback {
+    display: none;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .avatar-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .rank-badge {
+    position: absolute;
+    top: 10px; left: 10px;
+    background: var(--text);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+  .status-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 99px;
+  }
+  .badge-match { background: var(--match-bg); color: var(--match-color); }
+  .badge-weak  { background: var(--weak-bg);  color: var(--weak-color); }
+
+  .card-body { padding: 1rem; }
+  .card-name { font-size: 15px; font-weight: 600; text-transform: capitalize; margin-bottom: 2px; }
+  .card-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 1rem; word-break: break-all; }
+
+  .conf-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+  .conf-label-row span:first-child { color: var(--muted); }
+  .conf-label-row span:last-child  { font-weight: 600; }
+  .conf-bar { height: 5px; background: var(--bar-bg); border-radius: 99px; overflow: hidden; margin-bottom: 1rem; }
+  .conf-fill { height: 100%; border-radius: 99px; background: var(--text); transition: width 0.9s cubic-bezier(0.4,0,0.2,1); }
+  .conf-fill.weak { background: var(--weak-color); }
+
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+  }
+  .card-meta strong { color: var(--text); font-weight: 600; }
+
+  .empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+    font-size: 13px;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    background: var(--white);
+  }
+
+  .input-panel {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    margin-bottom: 2rem;
+  }
+  .input-img-wrap {
+    width: 200px;
+    min-width: 200px;
+    aspect-ratio: 1;
+    background: var(--tag-bg);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .input-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .input-img-fallback {
+    display: none;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+  }
+  .input-info {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    border-left: 1px solid var(--border);
+  }
+  .input-tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .input-filename { font-size: 1rem; font-weight: 600; color: var(--text); word-break: break-all; }
+  .input-meta { display: flex; gap: 1.5rem; margin-top: 4px; flex-wrap: wrap; }
+  .input-meta span { font-size: 12px; color: var(--muted); }
+  .input-meta strong { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="#">FaceFind</a>
+  <ul class="nav-links">
+    <li><a href="#">Dashboard</a></li>
+    <li><a href="#" class="active">Results</a></li>
+    <li><a href="#">Database</a></li>
+    <li><a href="#">Settings</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="nav-btn" onclick="loadData()">↺ Refresh</button>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="breadcrumb">Results / <span>Recognition scan</span></div>
+
+  <div class="page-header">
+    <div>
+      <h1>Recognition Results</h1>
+      <p>Model: VGG-Face &middot; detector: opencv</p>
+    </div>
+    <span class="result-count" id="result-count"></span>
+  </div>
+
+  <div id="input-panel"></div>
+  <div class="summary-strip" id="summary"></div>
+  <div id="results"></div>
+
+</div>
+
+<script>
+const MOCK_DATA = {
+  input_image: "./detect/1.png",
+  faces: [
+    {
+      face_index: 0,
+      total_matches: 4,
+      matches: [
+        { name: "duddin", image_path: "./pics/duddin/collab.jpg",  distance: 0.2472, threshold: 0.4, confidence_pct: 38.2,  status: "weak_match" },
+        { name: "duddin", image_path: "./pics/duddin/3.png",       distance: 0.2959, threshold: 0.4, confidence_pct: 26.03, status: "weak_match" },
+        { name: "duddin", image_path: "./pics/duddin/2.png",       distance: 0.3084, threshold: 0.4, confidence_pct: 22.9,  status: "weak_match" },
+        { name: "duddin", image_path: "./pics/duddin/4.png",       distance: 0.3611, threshold: 0.4, confidence_pct: 9.73,  status: "weak_match" }
+      ]
+    }
+  ]
+};
+
+function loadData() {
+  // To use your real endpoint, replace with:
+  // const res = await fetch("http://localhost:8000/recognize", { method: "POST", body: formData });
+  // const data = await res.json();
+  // render(data.input_image, data.faces);
+  render(MOCK_DATA.input_image, MOCK_DATA.faces);
+}
+
+function render(inputImage, faces) {
+  const totalMatches = faces.reduce((s, f) => s + f.total_matches, 0);
+  const allMatches = faces.flatMap(f => f.matches);
+  const bestConf = allMatches.length ? Math.max(...allMatches.map(m => m.confidence_pct)) : 0;
+  const bestDist = allMatches.length ? Math.min(...allMatches.map(m => m.distance)) : 0;
+  const filename = inputImage.split("/").pop();
+
+  document.getElementById("result-count").textContent =
+    `${totalMatches} result${totalMatches !== 1 ? 's' : ''} found`;
+
+  // input image panel
+  document.getElementById("input-panel").innerHTML = `
+    <div class="input-panel">
+      <div class="input-img-wrap">
+        <img
+          src="${inputImage}"
+          alt="Input image"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+        />
+        <div class="input-img-fallback">
+          <div class="avatar-circle">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <circle cx="14" cy="10" r="5" fill="#aaa"/>
+              <path d="M4 24c0-5.523 4.477-10 10-10s10 4.477 10 10" stroke="#aaa" stroke-width="2" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="input-info">
+        <div class="input-tag">Input image</div>
+        <div class="input-filename">${filename}</div>
+        <div style="font-size:12px; color:var(--muted); word-break:break-all;">${inputImage}</div>
+        <div class="input-meta">
+          <span>Faces detected: <strong>${faces.length}</strong></span>
+          <span>Total matches: <strong>${totalMatches}</strong></span>
+          <span>Best confidence: <strong>${bestConf.toFixed(1)}%</strong></span>
+          <span>Best distance: <strong>${bestDist.toFixed(3)}</strong></span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("summary").innerHTML = `
+    <div class="summary-item"><div class="summary-val">${faces.length}</div><div class="summary-label">Faces detected</div></div>
+    <div class="summary-item"><div class="summary-val">${totalMatches}</div><div class="summary-label">Total matches</div></div>
+    <div class="summary-item"><div class="summary-val">${bestConf.toFixed(1)}%</div><div class="summary-label">Best confidence</div></div>
+    <div class="summary-item"><div class="summary-val">${bestDist.toFixed(3)}</div><div class="summary-label">Best distance</div></div>
+  `;
+
+  document.getElementById("results").innerHTML = faces.map(face => `
+    <div style="margin-bottom:2rem;">
+      <div class="section-label">Face ${face.face_index + 1} &mdash; ${face.total_matches} match${face.total_matches !== 1 ? 'es' : ''}</div>
+      <div class="cards-grid">
+        ${face.matches.length === 0
+          ? `<div class="empty">No matches found in database</div>`
+          : face.matches.map((m, i) => cardHTML(m, i)).join('')
+        }
+      </div>
+    </div>
+  `).join('');
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll(".conf-fill").forEach(el => {
+      el.style.width = el.dataset.w + "%";
+    });
+  });
+}
+
+function cardHTML(m, i) {
+  const isMatch = m.status === "match";
+  const barW = Math.max(0, Math.min(100, m.confidence_pct));
+  const subpath = m.image_path.replace("./pics/", "");
+
+  return `
+    <div class="card">
+      <div class="card-img">
+        <img
+          src="${m.image_path}"
+          alt="${m.name}"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+        />
+        <div class="img-fallback">
+          <div class="avatar-circle">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <circle cx="14" cy="10" r="5" fill="#aaa"/>
+              <path d="M4 24c0-5.523 4.477-10 10-10s10 4.477 10 10" stroke="#aaa" stroke-width="2" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <span class="rank-badge">#${i + 1}</span>
+        <span class="status-badge ${isMatch ? 'badge-match' : 'badge-weak'}">${isMatch ? 'Match' : 'Weak'}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">${m.name}</div>
+        <div class="card-subtitle">${subpath}</div>
+        <div class="conf-label-row">
+          <span>Confidence</span>
+          <span>${m.confidence_pct.toFixed(2)}%</span>
+        </div>
+        <div class="conf-bar">
+          <div class="conf-fill ${isMatch ? '' : 'weak'}" data-w="${barW}" style="width:0%"></div>
+        </div>
+        <div class="card-meta">
+          <span>Distance: <strong>${m.distance}</strong></span>
+          <span>Threshold: <strong>${m.threshold}</strong></span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+loadData();
+</script>
+</body>
+</html>

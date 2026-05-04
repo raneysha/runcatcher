@@ -1,0 +1,17 @@
+[
+  {
+    "identity": "./pics/duddin\\3.png",
+    "distance": 0.295935,
+    "threshold": 0.4
+  },
+  {
+    "identity": "./pics/duddin\\2.png",
+    "distance": 0.308374,
+    "threshold": 0.4
+  },
+  {
+    "identity": "./pics/duddin\\4.png",
+    "distance": 0.361102,
+    "threshold": 0.4
+  }
+]
