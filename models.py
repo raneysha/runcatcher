@@ -1,0 +1,20 @@
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from database import Base
+
+class Users(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    email = Column(String, unique=True, index=True)
+    role = Column(String, index=True)
+    password = Column(String, index=True)
+
+class Images(Base):
+    __tablename__ = "images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    url = Column(String, index=True)
+    thumbnail_url = Column(String, index=True)
+    description = Column(String, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))

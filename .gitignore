@@ -2,3 +2,5 @@
 /pics
 .venv
 /detect
+*.png
+*.jpg
