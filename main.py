@@ -5,9 +5,10 @@ import models
 from database import SessionLocal, engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-
+import auth
 
 app = FastAPI()
+app.include_router(auth.router)
 models.Base.metadata.create_all(bind=engine)
 
 class UsersCreate(BaseModel):
@@ -37,19 +38,11 @@ def get_db():
         db.close()
 
 db_dependency = Annotated[Session, Depends(get_db)]
+user_dependency = Annotated[dict, Depends(auth.get_current_user)]
 
-@app.post("/users/", response_model=UsersResponse)
-async def create_user(user: UsersCreate, db: db_dependency):
-    try:
-        db_user = models.Users(name=user.name, email=user.email, role=user.role, password=user.password)
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-        return db_user
 
-    except IntegrityError as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail=str(e.orig)
-        )
+@app.get("/user")
+async def read_user(user: user_dependency, db: db_dependency):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return {"User": user}

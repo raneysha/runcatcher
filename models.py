@@ -8,7 +8,7 @@ class Users(Base):
     name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
     role = Column(String, index=True)
-    password = Column(String, index=True)
+    password = Column(String(72), index=True)  # Adjust the length as needed
 
 class Images(Base):
     __tablename__ = "images"
