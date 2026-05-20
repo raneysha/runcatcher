@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional, Annotated
 import models
@@ -6,11 +7,23 @@ from database import SessionLocal, engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import auth
+import images as images_router   # ← new
 
 app = FastAPI()
+
+# Routers
 app.include_router(auth.router)
+app.include_router(images_router.router)   # ← new: mounts at /images
+
+# Serve uploaded files as static assets
+app.mount("/uploads",    StaticFiles(directory="uploads"),    name="uploads")
+app.mount("/thumbnails", StaticFiles(directory="thumbnails"), name="thumbnails")
+
 models.Base.metadata.create_all(bind=engine)
 
+# ------------------------------------------------------------------
+# Schemas
+# ------------------------------------------------------------------
 class UsersCreate(BaseModel):
     name: str
     email: str
@@ -30,6 +43,9 @@ class Images(BaseModel):
     description: Optional[str] = None
     user_id: int
 
+# ------------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------------
 def get_db():
     db = SessionLocal()
     try:
@@ -40,7 +56,9 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 user_dependency = Annotated[dict, Depends(auth.get_current_user)]
 
-
+# ------------------------------------------------------------------
+# Existing endpoints
+# ------------------------------------------------------------------
 @app.get("/user")
 async def read_user(user: user_dependency, db: db_dependency):
     if user is None:
