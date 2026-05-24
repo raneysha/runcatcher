@@ -110,23 +110,22 @@ def _save_file(upload: UploadFile) -> tuple[str, bytes]:
     return dest, raw   # e.g. ("uploads/abc123.jpg", b"...")
 
 
-def _generate_thumbnail(raw: bytes, stem: str) -> str:
+def _generate_thumbnail(raw: bytes, filename: str) -> str:
     """
     Create a resized copy of the image and save it to THUMBNAIL_DIR.
 
     - Preserves aspect ratio (thumbnail_copy fits inside THUMBNAIL_SIZE box).
     - GIF: only the first frame is thumbnailed and saved as JPEG.
-    - Output is always JPEG for consistency and smaller file size.
+    - Output filename matches the original uploaded filename exactly.
 
     Args:
-        raw:  Raw bytes of the original image.
-        stem: Base filename without extension (shared with the original).
+        raw:      Raw bytes of the original image.
+        filename: Full filename including extension (shared with the original).
 
     Returns:
-        Relative disk path of the thumbnail, e.g. "thumbnails/abc123.jpg".
+        Relative disk path of the thumbnail, e.g. "thumbnails/abc123.png".
     """
-    thumb_filename = f"{stem}.jpg"
-    thumb_path = os.path.join(THUMBNAIL_DIR, thumb_filename)
+    thumb_path = os.path.join(THUMBNAIL_DIR, filename)
 
     with PilImage.open(io.BytesIO(raw)) as img:
         # For animated GIFs, use only the first frame
@@ -140,7 +139,14 @@ def _generate_thumbnail(raw: bytes, stem: str) -> str:
             img = img.convert("RGB")
 
         img.thumbnail(THUMBNAIL_SIZE, PilImage.LANCZOS)
-        img.save(thumb_path, format="JPEG", quality=85, optimize=True)
+
+        # Derive format from filename extension; fall back to JPEG
+        ext = os.path.splitext(filename)[-1].lstrip(".").upper()
+        fmt = ext if ext in ("JPEG", "PNG", "WEBP") else "JPEG"
+        save_kwargs = {"format": fmt, "optimize": True}
+        if fmt == "JPEG":
+            save_kwargs["quality"] = 85
+        img.save(thumb_path, **save_kwargs)
 
     return thumb_path   # e.g. "thumbnails/abc123.jpg"
 
@@ -165,11 +171,11 @@ async def upload_image(
     """
     file_path, raw = _save_file(file)
 
-    # Derive a shared stem (UUID without extension) for the thumbnail filename
-    stem = os.path.splitext(os.path.basename(file_path))[0]
+    # Derive the filename (with extension) for the thumbnail
+    filename = os.path.basename(file_path)
 
     try:
-        thumb_path = _generate_thumbnail(raw, stem)
+        thumb_path = _generate_thumbnail(raw, filename)
     except Exception as e:
         # Thumbnail failure is non-fatal — log and fall back to original
         import logging

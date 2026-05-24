@@ -8,12 +8,24 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import auth
 import images as images_router   # ← new
+from face_search import router as face_search_router
+from fastapi.middleware.cors import CORSMiddleware
+
+
 
 app = FastAPI()
 
 # Routers
 app.include_router(auth.router)
 app.include_router(images_router.router)   # ← new: mounts at /images
+app.include_router(face_search_router)     # ← new: mounts at /faces
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Serve uploaded files as static assets
 app.mount("/uploads",    StaticFiles(directory="uploads"),    name="uploads")
